@@ -1,6 +1,6 @@
 import { useWeb3React } from '@web3-react/core';
 import { InjectedConnector } from '@web3-react/injected-connector';
-
+//hello
 const injected = new InjectedConnector({
   supportedChainIds: [1, 11155111],
 });
