@@ -1,6 +1,7 @@
 {
   "name": "credchain-frontend",
   "version": "1.0.0",
+  "proxy": "http://localhost:5000",
   "private": true,
   "description": "CredChain React Frontend",
   "scripts": {
@@ -10,6 +11,7 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "@auth0/auth0-react": "^2.3.0",
     "@web3-react/core": "^6.1.9",
     "@web3-react/injected-connector": "^6.0.7",
     "autoprefixer": "^10.4.21",

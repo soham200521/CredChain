@@ -1,4 +1,10 @@
+// import { Auth0Provider } from '@auth0/auth0-react';
+// import { useAuth0 } from '@auth0/auth0-react';
+
 export default function Overview() {
+
+  // const { loginWithRedirect } = useAuth0();
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 flex items-center justify-center">
         <div className="bg-white/80 dark:bg-gray-900/80 shadow-xl rounded-2xl p-10 max-w-2xl w-full">
@@ -31,6 +37,7 @@ export default function Overview() {
             </section>
           </div>
         </div>
+        
       </div>
     );
   }
