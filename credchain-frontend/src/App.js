@@ -16,7 +16,7 @@ export default function App() {
         <Route path="/" element={<Overview />} />
         <Route path="/signup" element={<SignUp />} />
         {/* <Route path="/login" element={<Login />} /> */}
-        {/* <Route path="/financial-details" element={<FinancialDetails />} /> */}
+        <Route path="/financial-details" element={<FinancialDetails />} />
         {/* <Route path="/credit-score" element={<CreditScore />} /> */}
         <Route path="/about" element={<About/>}/>
         <Route path="/contact" element={<Contact/>}/>
