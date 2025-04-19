@@ -5,7 +5,7 @@
 <a href="https://hack36.com"> <img src="https://i.postimg.cc/FFwvfkGk/built-at-hack36.png" height=24px> </a>
 
 ## Introduction:
-CredChain is a decentralized, privacy-first credit scoring platform leveraging blockchain to create fair, transparent, and immutable credit histories for all users.
+CredChain calculates credit scores using alternative data sources—such as utility payments, rent history, gig economy income, and cash-flow data—instead of relying only on traditional credit bureau records. This approach helps people who lack formal credit histories, like gig workers or those with thin files, to demonstrate their creditworthiness and gain access to financial services that would otherwise exclude them.
 
 ## Demo Video Link:
 [Demo Video](https://drive.google.com/drive/folders/1pDdWL6IcOdvwN1UJFaphEq6vsTtWHzrs?usp=drive_link)
