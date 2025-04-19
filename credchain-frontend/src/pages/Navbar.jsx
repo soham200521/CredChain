@@ -46,7 +46,8 @@ export default function Navbar() {
       };
 
     return (
-        <nav className="w-full pl-12 pr-16 py-4 bg-gradient-to-r from-[#181f3a] to-[#2a4365] flex items-center justify-between shadow">
+        <nav className="w-full pl-12 pr-16 py-4 bg-gradient-to-r from-[#181f3a] to-[#2a4365] flex items-center justify-between shadow sticky top-0 z-50">
+
             {/* Logo and Brand */}
             <Link to="/" className="flex items-center space-x-0">
                 <svg
@@ -170,9 +171,17 @@ export default function Navbar() {
                 <Link to="/contact" className="text-white text-lg font-medium hover:text-pink-400 transition">
                     Contact Us
                 </Link>
-                <Link to="/credit-score" className="text-white text-lg font-medium hover:text-pink-400 transition">
+                {user&&<Link to="/credit-score" className="text-white text-lg font-medium hover:text-pink-400 transition">
                     View Score
-                </Link>
+                </Link>}
+
+                {user&&<Link to="/financial-details" className="text-white text-lg font-medium hover:text-pink-400 transition">
+                    Update Details
+                </Link>}
+
+
+
+                
                 {!isAuthenticated ? (
                     <button
                         onClick={() => loginWithRedirect()}

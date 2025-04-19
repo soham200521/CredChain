@@ -1,6 +1,6 @@
 import React from "react";
 
-const MOCK_SCORE = 580; // Replace with real score from backend
+const MOCK_SCORE = 300; // Replace with real score from backend
 const MAX_SCORE = 900;
 const TARGET_SCORE = 650;
 

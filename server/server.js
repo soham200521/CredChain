@@ -10,6 +10,7 @@ const User=require('./models/user');
 const {gentoken}=require('./jsonwebtoken/jwt');
 const path = require('path');
 const {isloggedin}=require('./middleware/isloogedin')
+const Detail=require('./models/details')
 const app=express();
 app.use(express.urlencoded({extended:true}))
 app.use(cooki_parser());
@@ -90,46 +91,94 @@ app.post('/signup', async (req, res) => {
 
 
 
-app.post('/upload-pdf', isloggedin, upload.single('pdf'), async (req, res) => {
+app.post('/upload-pdf', upload.fields([
+  { name: 'dueCertificates', maxCount: 1 },
+  { name: 'ratingsImage', maxCount: 1 },
+  { name: 'joiningCertificate', maxCount: 1 },
+  { name: 'weeklyWorkHoursPdf', maxCount: 1 },
+  { name: 'bankStatement', maxCount: 1 }
+]), isloggedin
+,async (req, res) => {
   try {
-    // Extract user data and filename
     const { _id, firstName } = req.user;
-    const originalName = path.parse(req.file.originalname).name; // remove extension if needed
-
     const folderName = `${_id}_${firstName}`;
-    const fileName = originalName; // Or modify this if you want a custom logic
+    const files = req.files;
+    
+    // Validate files exist
+    if (!files || Object.keys(files).length === 0) {
+      return res.status(400).json({ error: "No files uploaded" });
+    }
 
-    const streamUpload = (req) => {
-      return new Promise((resolve, reject) => {
+    // Process all files
+    const uploadResults = {};
+    for (const [fieldName, fileArray] of Object.entries(files)) {
+      const file = fileArray[0];
+      const originalName = path.parse(file.originalname).name
+  .trim()
+  .replace(/[^a-zA-Z0-9-_]/g, '_') // Replace special chars with underscores
+  .replace(/\s+/g, '_'); // Replace spaces with underscores
+      
+      const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
-            resource_type: 'raw',
+            resource_type: 'auto',
             folder: folderName,
-            public_id: fileName, // This is the Cloudinary file name without extension
+            public_id: originalName,
           },
-          (error, result) => {
-            if (result) {
-              resolve(result);
-            } else {
-              reject(error);
-            }
-          }
+          (error, result) => error ? reject(error) : resolve(result)
         );
-        streamifier.createReadStream(req.file.buffer).pipe(stream);
+        streamifier.createReadStream(file.buffer).pipe(stream);
       });
-    };
 
-    const result = await streamUpload(req);
+      uploadResults[fieldName] = result.secure_url;
+    }
 
     res.json({
-      message: 'PDF uploaded successfully',
-      url: result.secure_url,
+      message: 'All files uploaded successfully',
+      urls: uploadResults
     });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ error: 'Upload failed' });
+    res.status(500).json({ error: 'File upload failed' });
   }
 });
+
+app.post('/submitdetails', isloggedin, async (req, res) => {
+  try {
+    const { monthlyIncome, dues, rating, duration, hours, documents } = req.body;
+
+    // Validate required fields
+    if (!monthlyIncome || !dues || !rating || !duration || !hours) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const newEntry = new Detail({
+      monthlyIncome,
+      dues,
+      rating,
+      duration,
+      hours,
+      documents,
+      user: req.user._id // Assuming authenticated user
+    });
+
+    await newEntry.save();
+
+    // Add the detail reference to the user
+    await User.findByIdAndUpdate(
+      req.user._id,
+      { $push: { details: newEntry._id } },
+      { new: true }
+    );
+
+    res.status(201).json({ message: "Data saved successfully" });
+
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ message: "Invalid data format" });
+  }
+});
+
 
 
 

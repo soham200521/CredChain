@@ -8,7 +8,8 @@ const isloggedin=async(req,res,next)=>{
             return res.status(500).json({message:"You must login first"});
         }
         const data=jwt.verify(req.cookies.token,jwt_key);
-        const user=await Doc.findOne({email:data.email});
+        const user=await User.findOne({email:data.email});
+        console.log(user)
         if(!user){
             return res.status(500).json({message:"You must login first"});
         }

@@ -1,44 +1,32 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-
-const currencyOptions = [
-  { code: "INR", name: "Indian Rupee", symbol: "₹" },
-  { code: "USD", name: "US Dollar", symbol: "$" },
-  { code: "EUR", name: "Euro", symbol: "€" },
-  { code: "GBP", name: "Pound Sterling", symbol: "£" },
-  { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
-  { code: "AUD", name: "Australian Dollar", symbol: "A$" },
-  { code: "JPY", name: "Japanese Yen", symbol: "¥" },
-  { code: "CNY", name: "Chinese Yuan", symbol: "¥" },
-  { code: "AED", name: "UAE Dirham", symbol: "د.إ" },
-  { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
-];
-
+import axios from 'axios';
+import { Navigate, useNavigate } from 'react-router-dom';
 export default function FinancialDetails() {
-  const { register, handleSubmit, reset, formState: { errors }, setError } = useForm();
+  const [form, setForm] = useState({
+    income: '',
+    duration: '',
+    hours: '',
+    dueCertificates: null,
+    ratingsImage: null,
+    joiningCertificate: null,
+    weeklyWorkHoursPdf: null,
+    bankStatement: null,
+  });
+  const navigate=useNavigate()
+  const [formErrors, setFormErrors] = useState({});
   const [dues, setDues] = useState([
-    { title: '', dueDate: '', amount: '', organization: '', currency: 'INR', isLate: false, daysLate: 0 }
+    { title: '', dueDate: '', amount: '', organization: '', isLate: false, daysLate: '' }
   ]);
+  const [duesErrors, setDuesErrors] = useState([]);
   const [rating, setRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
-  const [duesErrors, setDuesErrors] = useState([]);
 
-  // Validate all dues fields before submit
-  const validateDues = () => {
-    let valid = true;
-    let errorsArr = [];
-    dues.forEach((due, idx) => {
-      let dueErr = {};
-      if (!due.title) { dueErr.title = true; valid = false; }
-      if (!due.dueDate) { dueErr.dueDate = true; valid = false; }
-      if (!due.amount) { dueErr.amount = true; valid = false; }
-      if (!due.organization) { dueErr.organization = true; valid = false; }
-      if (!due.currency) { dueErr.currency = true; valid = false; }
-      if (due.isLate && (!due.daysLate || parseInt(due.daysLate) < 1)) { dueErr.daysLate = true; valid = false; }
-      errorsArr[idx] = dueErr;
-    });
-    setDuesErrors(errorsArr);
-    return valid;
+  const handleChange = (e) => {
+    const { name, value, type, files } = e.target;
+    setForm(f => ({
+      ...f,
+      [name]: type === 'file' ? files[0] : value
+    }));
   };
 
   const handleDuesChange = (index, event) => {
@@ -51,7 +39,7 @@ export default function FinancialDetails() {
   const addDues = () => {
     setDues([
       ...dues,
-      { title: '', dueDate: '', amount: '', organization: '', currency: 'INR', isLate: false, daysLate: 0 }
+      { title: '', dueDate: '', amount: '', organization: '', isLate: false, daysLate: '' }
     ]);
   };
 
@@ -61,98 +49,160 @@ export default function FinancialDetails() {
     setDues(newDues);
   };
 
-  const validateFileType = (file, types) => {
-    if (!file) return false;
-    const valid = types.some(type =>
-      file.type === type || (type === 'image/jpeg' && file.name.match(/\.(jpg|jpeg)$/i))
-    );
+  const validateDues = () => {
+    let valid = true;
+    let errorsArr = [];
+    dues.forEach((due, idx) => {
+      let dueErr = {};
+      if (!due.title) { dueErr.title = true; valid = false; }
+      if (!due.dueDate) { dueErr.dueDate = true; valid = false; }
+      if (due.amount === '' || isNaN(Number(due.amount))) { dueErr.amount = true; valid = false; }
+      if (Number(due.amount) < 0) { dueErr.amountNegative = true; valid = false; }
+      if (!due.organization) { dueErr.organization = true; valid = false; }
+      if (due.isLate && (!due.daysLate || Number(due.daysLate) < 1)) { dueErr.daysLate = true; valid = false; }
+      errorsArr[idx] = dueErr;
+    });
+    setDuesErrors(errorsArr);
     return valid;
   };
 
-  const onSubmit = (data) => {
-    if (!validateDues()) return;
-    if (rating === 0) {
-      alert("Please select a rating.");
-      return;
-    }
+  const validateFileType = (file, types) => {
+    if (!file) return false;
+    return types.some(type =>
+      file.type === type || (type === 'image/jpeg' && file.name.match(/\.(jpg|jpeg)$/i))
+    );
+  };
 
-    // File type validation
-    let fileErrors = false;
+  const validateForm = () => {
+    let errors = {};
+    if (form.income === '') errors.income = "Monthly income is required";
+    else if (Number(form.income) < 0) errors.income = "Monthly income cannot be negative";
+    if (form.duration === '') errors.duration = "Duration is required";
+    else if (Number(form.duration) < 0) errors.duration = "Duration cannot be negative";
+    if (form.hours === '') errors.hours = "Weekly work hours are required";
+    else if (Number(form.hours) < 0) errors.hours = "Weekly work hours cannot be negative";
+    if (!form.dueCertificates || !validateFileType(form.dueCertificates, ['application/pdf'])) errors.dueCertificates = "Please upload a PDF file.";
+    if (!form.ratingsImage || !validateFileType(form.ratingsImage, ['image/jpeg'])) errors.ratingsImage = "Please upload a JPG image.";
+    if (!form.joiningCertificate || !validateFileType(form.joiningCertificate, ['application/pdf'])) errors.joiningCertificate = "Please upload a PDF file.";
+    if (!form.weeklyWorkHoursPdf || !validateFileType(form.weeklyWorkHoursPdf, ['application/pdf'])) errors.weeklyWorkHoursPdf = "Please upload a PDF file.";
+    if (!form.bankStatement || !validateFileType(form.bankStatement, ['application/pdf'])) errors.bankStatement = "Please upload a PDF file.";
+    if (rating === 0) errors.rating = "Rating is required";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
-    if (
-      !data.dueCertificates?.[0] ||
-      data.dueCertificates[0].type !== "application/pdf"
-    ) {
-      setError("dueCertificates", { type: "manual", message: "Please upload a PDF file." });
-      fileErrors = true;
-    }
-    if (
-      !data.ratingsImage?.[0] ||
-      !(data.ratingsImage[0].type === "image/jpeg" || data.ratingsImage[0].name.match(/\.(jpg|jpeg)$/i))
-    ) {
-      setError("ratingsImage", { type: "manual", message: "Please upload a JPG image." });
-      fileErrors = true;
-    }
-    if (
-      !data.joiningCertificate?.[0] ||
-      data.joiningCertificate[0].type !== "application/pdf"
-    ) {
-      setError("joiningCertificate", { type: "manual", message: "Please upload a PDF file." });
-      fileErrors = true;
-    }
-    if (
-      !data.weeklyWorkHoursPdf?.[0] ||
-      data.weeklyWorkHoursPdf[0].type !== "application/pdf"
-    ) {
-      setError("weeklyWorkHoursPdf", { type: "manual", message: "Please upload a PDF file." });
-      fileErrors = true;
-    }
-    if (
-      !data.bankStatement?.[0] ||
-      data.bankStatement[0].type !== "application/pdf"
-    ) {
-      setError("bankStatement", { type: "manual", message: "Please upload a PDF file." });
-      fileErrors = true;
-    }
+  // Upload all files in one request
+  const uploadAllFiles = async () => {
+    const formData = new FormData();
+    formData.append('dueCertificates', form.dueCertificates);
+    formData.append('ratingsImage', form.ratingsImage);
+    formData.append('joiningCertificate', form.joiningCertificate);
+    formData.append('weeklyWorkHoursPdf', form.weeklyWorkHoursPdf);
+    formData.append('bankStatement', form.bankStatement);
 
-    if (fileErrors) return;
+    const response = await axios.post('/upload-pdf', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data.urls;
+  };
 
-    const formData = { ...data, dues, rating };
-    console.log("Submit to backend:", formData);
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 2000);
-    reset();
-    setDues([{ title: '', dueDate: '', amount: '', organization: '', currency: 'INR', isLate: false, daysLate: 0 }]);
-    setRating(0);
-    setDuesErrors([]);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const duesValid = validateDues();
+    const formValid = validateForm();
+    if (!duesValid || !formValid) return;
+  
+    try {
+      // 1. Upload files
+      const formData = new FormData();
+      formData.append('dueCertificates', form.dueCertificates);
+      formData.append('ratingsImage', form.ratingsImage);
+      formData.append('joiningCertificate', form.joiningCertificate);
+      formData.append('weeklyWorkHoursPdf', form.weeklyWorkHoursPdf);
+      formData.append('bankStatement', form.bankStatement);
+  
+      const uploadResponse = await axios.post('/upload-pdf', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+  
+      // 2. Submit form data
+      const submission = {
+        monthlyIncome: Number(form.income),
+        duration: Number(form.duration),
+        hours: Number(form.hours),
+        rating,
+        dues: dues.map(due => ({
+          title: due.title,
+          dueDate: due.dueDate,
+          amount: Number(due.amount),
+          organization: due.organization,
+          isLate: due.isLate,
+          daysLate: due.isLate ? Number(due.daysLate) : 0
+        })),
+        documents: uploadResponse.data.urls
+      };
+  
+      await axios.post('/submitdetails', submission);
+  
+      // Reset form state
+      setForm({
+        income: '',
+        duration: '',
+        hours: '',
+        dueCertificates: null,
+        ratingsImage: null,
+        joiningCertificate: null,
+        weeklyWorkHoursPdf: null,
+        bankStatement: null,
+      });
+      setDues([{ 
+        title: '', 
+        dueDate: '', 
+        amount: '', 
+        organization: '', 
+        isLate: false, 
+        daysLate: '' 
+      }]);
+      setRating(0);
+      setDuesErrors([]);
+      setFormErrors({});
+      
+      // Show success alert
+      window.alert('Form submitted successfully! Your Documents will be verified and Score updated within 5 days');
+      navigate('/')
+  
+    } catch (error) {
+      console.error('Submission error:', error.response?.data);
+      alert(`Error: ${error.response?.data?.message || 'Submission failed'}`);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#181c31] via-[#22304f] to-[#3a245e]">
       <div className="relative bg-white/15 backdrop-blur-lg rounded-3xl shadow-[0_0_40px_#4f8cfb40] p-10 w-full max-w-2xl border border-[#4f8cfb]/30">
-        {/* Success Toast */}
         {submitted && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-green-300/90 text-green-900 px-6 py-2 rounded-xl shadow-lg font-semibold animate-fade-in z-10">
             Details submitted!
           </div>
         )}
-
         <h1 className="text-4xl font-extrabold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-[#4f8cfb] to-[#a770ef] drop-shadow">
           Financial Details
         </h1>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+        <form onSubmit={handleSubmit} className="space-y-10">
           {/* Monthly Income */}
           <div>
             <label className="block text-sm font-medium text-white mb-2">
               Monthly Income (INR)
             </label>
             <input
-              {...register("income", { required: "Monthly income is required" })}
+              name="income"
               type="number"
-              className={`w-full rounded-lg border px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] focus:ring-2 focus:ring-[#a770ef] focus:border-[#a770ef] transition ${errors.income ? "border-red-500" : "border-[#4f8cfb]/40"}`}
+              value={form.income}
+              onChange={handleChange}
+              className={`w-full rounded-lg border px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] ${formErrors.income ? "border-red-500" : "border-[#4f8cfb]/40"}`}
               placeholder="Enter monthly income"
             />
-            {errors.income && <p className="text-red-400 text-xs mt-1">{errors.income.message}</p>}
+            {formErrors.income && <p className="text-red-400 text-xs mt-1">{formErrors.income}</p>}
           </div>
           {/* Monthly Dues */}
           <div>
@@ -197,21 +247,14 @@ export default function FinancialDetails() {
                       <label className="block text-xs font-medium text-white mb-1">
                         Due Date
                       </label>
-                      <div className="relative">
-                        <input
-                          name="dueDate"
-                          type="date"
-                          value={due.dueDate}
-                          onChange={e => handleDuesChange(index, e)}
-                          required
-                          className={`w-full rounded border px-3 py-2 text-sm pr-10 bg-white/20 text-white placeholder-[#b8cfff] ${duesErrors[index]?.dueDate ? "border-red-500" : "border-[#4f8cfb]/30"}`}
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b8cfff] pointer-events-none">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </span>
-                      </div>
+                      <input
+                        name="dueDate"
+                        type="date"
+                        value={due.dueDate}
+                        onChange={e => handleDuesChange(index, e)}
+                        required
+                        className={`w-full rounded border px-3 py-2 text-sm pr-10 bg-white/20 text-white placeholder-[#b8cfff] ${duesErrors[index]?.dueDate ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+                      />
                       {duesErrors[index]?.dueDate && <p className="text-red-400 text-xs mt-1">Required</p>}
                     </div>
                     <div>
@@ -224,29 +267,12 @@ export default function FinancialDetails() {
                         value={due.amount}
                         onChange={e => handleDuesChange(index, e)}
                         required
-                        className={`w-full rounded border px-3 py-2 text-sm bg-white/20 text-white placeholder-[#b8cfff] ${duesErrors[index]?.amount ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+                        min="0"
+                        className={`w-full rounded border px-3 py-2 text-sm bg-white/20 text-white placeholder-[#b8cfff] ${duesErrors[index]?.amount || duesErrors[index]?.amountNegative ? "border-red-500" : "border-[#4f8cfb]/30"}`}
                         placeholder="0.00"
                       />
                       {duesErrors[index]?.amount && <p className="text-red-400 text-xs mt-1">Required</p>}
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-white mb-1">
-                        Currency
-                      </label>
-                      <select
-                        name="currency"
-                        value={due.currency}
-                        onChange={e => handleDuesChange(index, e)}
-                        required
-                        className={`w-full rounded border px-3 py-2 text-sm bg-white/20 text-white ${duesErrors[index]?.currency ? "border-red-500" : "border-[#4f8cfb]/30"}`}
-                      >
-                        {currencyOptions.map(opt => (
-                          <option key={opt.code} value={opt.code}>
-                            {opt.symbol} {opt.code} - {opt.name}
-                          </option>
-                        ))}
-                      </select>
-                      {duesErrors[index]?.currency && <p className="text-red-400 text-xs mt-1">Required</p>}
+                      {duesErrors[index]?.amountNegative && <p className="text-red-400 text-xs mt-1">Amount cannot be negative</p>}
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-xs font-medium text-white mb-1">
@@ -282,9 +308,9 @@ export default function FinancialDetails() {
                             value={due.daysLate}
                             onChange={e => handleDuesChange(index, e)}
                             required
+                            min="1"
                             className={`ml-4 w-32 rounded border px-3 py-2 text-sm bg-white/20 text-white placeholder-[#b8cfff] ${duesErrors[index]?.daysLate ? "border-red-500" : "border-[#4f8cfb]/30"}`}
                             placeholder="Days late"
-                            min="1"
                           />
                           {duesErrors[index]?.daysLate && <p className="text-red-400 text-xs mt-1">Required</p>}
                         </>
@@ -328,7 +354,7 @@ export default function FinancialDetails() {
               </div>
               <span className="ml-2 text-lg font-semibold text-white">{rating} / 5</span>
             </div>
-            {rating === 0 && <p className="text-red-400 text-xs mt-1">Rating is required</p>}
+            {formErrors.rating && <p className="text-red-400 text-xs mt-1">{formErrors.rating}</p>}
           </div>
           {/* Duration and Work Hours */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -337,24 +363,32 @@ export default function FinancialDetails() {
                 Duration with Current Company (years)
               </label>
               <input
-                {...register("duration", { required: "Duration is required" })}
+                name="duration"
                 type="number"
-                className={`w-full rounded-lg border px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] focus:ring-2 focus:ring-[#a770ef] focus:border-[#a770ef] ${errors.duration ? "border-red-500" : "border-[#4f8cfb]/40"}`}
+                value={form.duration}
+                onChange={handleChange}
+                min="0"
+                required
+                className={`w-full rounded-lg border px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] ${formErrors.duration ? "border-red-500" : "border-[#4f8cfb]/40"}`}
                 placeholder="Enter employment duration"
               />
-              {errors.duration && <p className="text-red-400 text-xs mt-1">{errors.duration.message}</p>}
+              {formErrors.duration && <p className="text-red-400 text-xs mt-1">{formErrors.duration}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-white mb-2">
                 Weekly Work Hours
               </label>
               <input
-                {...register("hours", { required: "Weekly work hours are required" })}
+                name="hours"
                 type="number"
-                className={`w-full rounded-lg border px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] focus:ring-2 focus:ring-[#a770ef] focus:border-[#a770ef] ${errors.hours ? "border-red-500" : "border-[#4f8cfb]/40"}`}
+                value={form.hours}
+                onChange={handleChange}
+                min="0"
+                required
+                className={`w-full rounded-lg border px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] ${formErrors.hours ? "border-red-500" : "border-[#4f8cfb]/40"}`}
                 placeholder="Enter weekly hours"
               />
-              {errors.hours && <p className="text-red-400 text-xs mt-1">{errors.hours.message}</p>}
+              {formErrors.hours && <p className="text-red-400 text-xs mt-1">{formErrors.hours}</p>}
             </div>
           </div>
           {/* Document Uploads */}
@@ -365,50 +399,60 @@ export default function FinancialDetails() {
               <input
                 type="file"
                 accept="application/pdf"
-                {...register('dueCertificates', { required: "Due certificates PDF is required" })}
-                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${errors.dueCertificates ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+                name="dueCertificates"
+                onChange={handleChange}
+                required
+                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${formErrors.dueCertificates ? "border-red-500" : "border-[#4f8cfb]/30"}`}
               />
-              {errors.dueCertificates && <p className="text-red-400 text-xs mt-1">{errors.dueCertificates.message}</p>}
+              {formErrors.dueCertificates && <p className="text-red-400 text-xs mt-1">{formErrors.dueCertificates}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-white mb-1">Image of Ratings (Screenshot in JPG)</label>
               <input
                 type="file"
                 accept=".jpg, .jpeg,image/jpeg"
-                {...register('ratingsImage', { required: "Ratings screenshot (JPG) is required" })}
-                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${errors.ratingsImage ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+                name="ratingsImage"
+                onChange={handleChange}
+                required
+                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${formErrors.ratingsImage ? "border-red-500" : "border-[#4f8cfb]/30"}`}
               />
-              {errors.ratingsImage && <p className="text-red-400 text-xs mt-1">{errors.ratingsImage.message}</p>}
+              {formErrors.ratingsImage && <p className="text-red-400 text-xs mt-1">{formErrors.ratingsImage}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-white mb-1">Joining Certificate (PDF)</label>
               <input
                 type="file"
                 accept="application/pdf"
-                {...register('joiningCertificate', { required: "Joining certificate PDF is required" })}
-                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${errors.joiningCertificate ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+                name="joiningCertificate"
+                onChange={handleChange}
+                required
+                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${formErrors.joiningCertificate ? "border-red-500" : "border-[#4f8cfb]/30"}`}
               />
-              {errors.joiningCertificate && <p className="text-red-400 text-xs mt-1">{errors.joiningCertificate.message}</p>}
+              {formErrors.joiningCertificate && <p className="text-red-400 text-xs mt-1">{formErrors.joiningCertificate}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-white mb-1">Weekly Work Hours (Past Work Done PDF)</label>
               <input
                 type="file"
                 accept="application/pdf"
-                {...register('weeklyWorkHoursPdf', { required: "Work hours PDF is required" })}
-                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${errors.weeklyWorkHoursPdf ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+                name="weeklyWorkHoursPdf"
+                onChange={handleChange}
+                required
+                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${formErrors.weeklyWorkHoursPdf ? "border-red-500" : "border-[#4f8cfb]/30"}`}
               />
-              {errors.weeklyWorkHoursPdf && <p className="text-red-400 text-xs mt-1">{errors.weeklyWorkHoursPdf.message}</p>}
+              {formErrors.weeklyWorkHoursPdf && <p className="text-red-400 text-xs mt-1">{formErrors.weeklyWorkHoursPdf}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-white mb-1">Bank Statement (Past 3 months PDF)</label>
               <input
                 type="file"
                 accept="application/pdf"
-                {...register('bankStatement', { required: "Bank statement PDF is required" })}
-                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${errors.bankStatement ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+                name="bankStatement"
+                onChange={handleChange}
+                required
+                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${formErrors.bankStatement ? "border-red-500" : "border-[#4f8cfb]/30"}`}
               />
-              {errors.bankStatement && <p className="text-red-400 text-xs mt-1">{errors.bankStatement.message}</p>}
+              {formErrors.bankStatement && <p className="text-red-400 text-xs mt-1">{formErrors.bankStatement}</p>}
             </div>
           </div>
           {/* Submit */}

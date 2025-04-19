@@ -28,7 +28,13 @@ const userSchema=mongoose.Schema({
     email:{
         type:String,
         require:true
-    }
+    },
+    details: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'detail'
+        }
+      ]
     
 
 })
