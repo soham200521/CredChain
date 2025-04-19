@@ -6,7 +6,7 @@ import axios from 'axios';
 export default function Navbar() {
     const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
     const navigate = useNavigate();
-    const location = useLocation(); // Fixed: proper initialization of location
+    const location = useLocation();
 
     useEffect(() => {
         const login_func = async () => {
@@ -16,12 +16,12 @@ export default function Navbar() {
                 });
 
                 if (response.status === 200 && location.pathname === '/') {
-                    navigate('/'); // ✅ only redirect if on root
+                    navigate('/');
                 }
             } catch (error) {
                 console.error('Error during registration check:', error);
                 if (location.pathname === '/') {
-                    navigate('/signup'); // ✅ only redirect if on root
+                    navigate('/signup');
                 }
             }
         };
@@ -33,7 +33,7 @@ export default function Navbar() {
 
     return (
         <nav className="w-full px-16 py-4 bg-gradient-to-r from-[#181f3a] to-[#2a4365] flex items-center justify-between shadow">
-            {/* Logo - Clickable, routes to overview */}
+            {/* Logo */}
             <Link
                 to="/"
                 className="text-2xl font-bold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-transparent bg-clip-text"
@@ -41,6 +41,7 @@ export default function Navbar() {
                 CredChain
             </Link>
 
+            {/* Navigation Links */}
             <div className="flex items-center space-x-8">
                 <Link
                     to="/about"
@@ -49,11 +50,25 @@ export default function Navbar() {
                     About Us
                 </Link>
                 <Link
+                    to="/how-it-works"
+                    className="text-white text-lg font-medium hover:text-pink-400 transition"
+                >
+                    How It Works
+                </Link>
+                <Link
+                    to="/why-credchain"
+                    className="text-white text-lg font-medium hover:text-pink-400 transition"
+                >
+                    Why CredChain?
+                </Link>
+                <Link
                     to="/contact"
                     className="text-white text-lg font-medium hover:text-pink-400 transition"
                 >
                     Contact Us
                 </Link>
+                
+                {/* Auth Buttons */}
                 {!isAuthenticated ? (
                     <button
                         onClick={() => loginWithRedirect()}
