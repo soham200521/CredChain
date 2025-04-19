@@ -1,64 +1,75 @@
 import React, { useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-import { Link } from 'react-router-dom'; // Optional: Only if using react-router
-import { useNavigate } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
+
 export default function Navbar() {
-    const { loginWithRedirect, logout, user, isAuthenticated,isLoading } = useAuth0();
+    const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
+    const navigate = useNavigate();
+    const location = useLocation(); // Fixed: proper initialization of location
 
-    const navigate=useNavigate()
-  useEffect(() => {
-    const login_func = async () => {
-      try {
-        const response = await axios.get('/isregistered', {
-          params: { email: user.email }
-        });
+    useEffect(() => {
+        const login_func = async () => {
+            try {
+                const response = await axios.get('/isregistered', {
+                    params: { email: user.email }
+                });
 
-        if (response.status === 200 && location.pathname === '/') {
-          navigate('/'); // ✅ only redirect if on root
+                if (response.status === 200 && location.pathname === '/') {
+                    navigate('/'); // ✅ only redirect if on root
+                }
+            } catch (error) {
+                console.error('Error during registration check:', error);
+                if (location.pathname === '/') {
+                    navigate('/signup'); // ✅ only redirect if on root
+                }
+            }
+        };
+
+        if (isAuthenticated && user && user.email && !isLoading) {
+            login_func();
         }
-      } catch (error) {
-        console.error('Error during registration check:', error);
-        if (location.pathname === '/') {
-          navigate('/signup'); // ✅ only redirect if on root
-        }
-      }
-    };
+    }, [isAuthenticated, isLoading, user, navigate, location.pathname]);
 
-    if (isAuthenticated && user && user.email && !isLoading) {
-      login_func();
-    }
-  }, [isAuthenticated, isLoading, user, navigate, location.pathname]);
+    return (
+        <nav className="w-full px-16 py-4 bg-gradient-to-r from-[#181f3a] to-[#2a4365] flex items-center justify-between shadow">
+            {/* Logo - Clickable, routes to overview */}
+            <Link
+                to="/"
+                className="text-2xl font-bold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-transparent bg-clip-text"
+            >
+                CredChain
+            </Link>
 
-  return (
-    <nav className="bg-white/80 dark:bg-gray-900/80 shadow-md px-6 py-4 flex justify-between items-center">
-      <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-        CredChain
-      </div>
-      <div className="flex space-x-6 items-center">
-        {/* Use <a href=""> if not using react-router */}
-        <Link to="/about" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 transition">
-          About Us
-        </Link>
-        <Link to="/contact" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 transition">
-          Contact Us
-        </Link>
-        {!isAuthenticated ? (
-          <button
-            onClick={() => loginWithRedirect()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition"
-          >
-            Log In
-          </button>
-        ) : (
-          <button
-            onClick={() => logout({ returnTo: window.location.origin })}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold transition"
-          >
-            Log Out
-          </button>
-        )}
-      </div>
-    </nav>
-  );
+            <div className="flex items-center space-x-8">
+                <Link
+                    to="/about"
+                    className="text-white text-lg font-medium hover:text-pink-400 transition"
+                >
+                    About Us
+                </Link>
+                <Link
+                    to="/contact"
+                    className="text-white text-lg font-medium hover:text-pink-400 transition"
+                >
+                    Contact Us
+                </Link>
+                {!isAuthenticated ? (
+                    <button
+                        onClick={() => loginWithRedirect()}
+                        className="ml-4 px-4 py-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-lg text-white font-semibold shadow hover:scale-105 transition"
+                    >
+                        Log In
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => logout({ returnTo: window.location.origin })}
+                        className="ml-4 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold shadow hover:scale-105 transition"
+                    >
+                        Log Out
+                    </button>
+                )}
+            </div>
+        </nav>
+    );
 }
