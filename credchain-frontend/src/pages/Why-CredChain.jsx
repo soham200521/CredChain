@@ -68,7 +68,7 @@ export default function WhyCredChain() {
           <blockquote className="italic text-lg text-[#eec0ff] mb-2">
             “With CredChain, I finally got access to fair credit and new opportunities.”
           </blockquote>
-          <span className="text-[#b8cfff] font-semibold">— Priya, gig worker from Mumbai</span>
+          <span className="text-[#b8cfff] font-semibold">— Ayush, gig worker from Mumbai</span>
         </section>
 
         {/* CTA */}

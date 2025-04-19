@@ -67,6 +67,13 @@ export default function Navbar() {
                 >
                     Contact Us
                 </Link>
+                <Link
+                    to="/credit-score"
+                    className="text-white text-lg font-medium hover:text-pink-400 transition"
+                >
+                    View Score
+                </Link>
+
                 
                 {/* Auth Buttons */}
                 {!isAuthenticated ? (
