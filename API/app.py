@@ -5,21 +5,16 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 import joblib
 from flask_cors import CORS
-import sys
-
-# Add blockchain module import
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from API.blockchain import store_on_blockchain
 
 app = Flask(__name__)
 CORS(app)
 
 # Configuration
-BASE_DIR = Path(__file__).parent.parent
+BASE_DIR = Path(__file__).parent
 MODEL_DIR = BASE_DIR / "model"
 MODEL_PATH = MODEL_DIR / "credit_model.pkl"
 COLUMNS_PATH = MODEL_DIR / "columns.pkl"
-CSV_PATH = MODEL_DIR / "training_data.csv"
+CSV_PATH = BASE_DIR / "data/training_data.csv"
 
 # Ensure model directory exists
 MODEL_DIR.mkdir(exist_ok=True)
@@ -30,13 +25,13 @@ def train_model():
         X = df.drop("credit_score", axis=1)
         X = pd.get_dummies(X)
         y = df["credit_score"]
-        
+
         model = RandomForestRegressor()
         model.fit(X, y)
-        
+
         joblib.dump(model, MODEL_PATH)
         joblib.dump(X.columns.tolist(), COLUMNS_PATH)
-        
+
         print(f"✅ Model saved to {MODEL_PATH}")
         return True
     except Exception as e:
@@ -48,38 +43,17 @@ def predict():
     try:
         if not (MODEL_PATH.exists() and COLUMNS_PATH.exists()):
             return jsonify({"error": "Model not trained"}), 400
-            
+
         model = joblib.load(MODEL_PATH)
         columns = joblib.load(COLUMNS_PATH)
-        
+
         data = request.json
-        user_wallet = data.get('wallet_address')
-        
-        if not user_wallet:
-            return jsonify({"error": "Wallet address required"}), 400
-        
-        # Create dataframe for prediction
-        prediction_data = {k: v for k, v in data.items() if k != 'wallet_address'}
-        df = pd.DataFrame([prediction_data])
+        df = pd.DataFrame([data])
         df = pd.get_dummies(df).reindex(columns=columns, fill_value=0)
-        
-        prediction = model.predict(df)[0]
-        
-        # Store on blockchain
-        tx_hash = store_on_blockchain(user_wallet, prediction)
-        
-        if not tx_hash:
-            return jsonify({
-                "prediction": prediction,
-                "warning": "Failed to store on blockchain"
-            })
-        
-        return jsonify({
-            "prediction": prediction,
-            "blockchain_tx": tx_hash,
-            "blockchain_explorer": f"https://sepolia.etherscan.io/tx/{tx_hash}"
-        })
-        
+
+        prediction = model.predict(df)
+        return jsonify({"prediction": prediction[0]})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

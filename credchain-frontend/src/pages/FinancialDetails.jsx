@@ -169,7 +169,7 @@ export default function FinancialDetails() {
       
       // Show success alert
       window.alert('Form submitted successfully! Your Documents will be verified and Score updated within 5 days');
-      navigate('/')
+      navigate('/credit-score')
   
     } catch (error) {
       console.error('Submission error:', error.response?.data);

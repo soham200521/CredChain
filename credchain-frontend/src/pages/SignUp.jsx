@@ -29,7 +29,7 @@ export default function SignUp() {
     const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
     const phoneRegex = /^\d{10}$/;
 
-    if (!nameRegex.test(formData.firstName)) return 'First name should contain only letters.';r
+    if (!nameRegex.test(formData.firstName)) return 'First name should contain only letters.';
     if (!nameRegex.test(formData.lastName)) return 'Last name should contain only letters.';
     if (!aadharRegex.test(formData.aadhar)) return 'Aadhar must be a 12-digit numbers ONLY.';
     if (!panRegex.test(formData.pan)) return 'Invalid PAN format (e.g., ABCDE1234F).';
