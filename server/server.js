@@ -58,7 +58,7 @@ app.get('/logout', (req, res) => {
 
 app.post('/signup', async (req, res) => {
     try {
-        const { firstName, lastName, aadhar, pan, phone, address } = req.body.formData;
+        const { firstName, lastName, aadhar,platform, pan, phone, address } = req.body.formData;
         const email = req.body.email;
 
         // Corrected queries
@@ -74,6 +74,7 @@ app.post('/signup', async (req, res) => {
             firstName,
             lastName,
             aadhar,
+            platform,
             PAN: pan,
             mobileNo: phone,
             address,
@@ -179,6 +180,71 @@ app.post('/submitdetails', isloggedin, async (req, res) => {
   }
 });
 
+app.get("/getdetails", isloggedin, async (req, res) => {
+  try {
+    // 1. Get user's latest financial details
+    const latestDetails = await Detail.findOne({ user: req.user._id })
+      .sort({ dateToday: -1 })
+      .lean();
+
+    if (!latestDetails) {
+      return res.status(404).json({ error: "No financial details found" });
+    }
+
+    // 2. Get user's basic info
+    const userData = await User.findById(req.user._id)
+      .select('firstName lastName email platform mobileNo')
+      .lean();
+
+    // 3. Calculate total dues and cost_to_income
+    const totalDues = Array.isArray(latestDetails.dues)
+      ? latestDetails.dues.reduce((sum, due) => sum + (due.amount || 0), 0)
+      : 0;
+    const income = latestDetails.monthlyIncome || 0;
+    const costToIncome = income > 0 ? Number((totalDues / income).toFixed(2)) : 0;
+
+    // 4. Prepare prediction-ready object
+    const predictionData = {
+      platform: userData.platform,
+      income: income,
+      dues: totalDues,
+      cost_to_income: costToIncome,
+      platform_rating: latestDetails.rating,
+      SIZE: latestDetails.duration,
+      work_hours_per_week: latestDetails.hours
+    };
+
+    // 5. Respond with both raw and prediction-ready data
+    res.status(200).json({
+      userInfo: {
+        name: `${userData.firstName} ${userData.lastName}`,
+        email: userData.email,
+        platform: userData.platform,
+        phone: userData.mobileNo
+      },
+      financialDetails: {
+        income: income,
+        duration: latestDetails.duration,
+        hours: latestDetails.hours,
+        rating: latestDetails.rating,
+        verificationStatus: latestDetails.verified,
+        lastUpdated: latestDetails.dateToday
+      },
+      dues: latestDetails.dues.map(due => ({
+        title: due.title,
+        amount: due.amount,
+        dueDate: due.dueDate,
+        organization: due.organization,
+        status: due.isLate ? `Late (${due.daysLate} days)` : 'On time'
+      })),
+      predictionData // <--- This is the object to send to Flask /predict
+    });
+
+  } catch (error) {
+    console.error('Error fetching details:', error);
+    res.status(500).json({ error: 'Server error while fetching details' });
+  }
+});
 
 
 

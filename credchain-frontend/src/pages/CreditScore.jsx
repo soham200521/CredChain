@@ -1,80 +1,152 @@
-import React from "react";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
-const MOCK_SCORE = 300; // Replace with real score from backend
-const MAX_SCORE = 900;
-const TARGET_SCORE = 650;
+const CreditScoreDashboard = () => {
+  const [score, setScore] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-function getProgress(score) {
-  return Math.min(Math.round((score / MAX_SCORE) * 100), 100);
-}
-function getToTargetPercent(score) {
-  if (score >= TARGET_SCORE) return 0;
-  return Math.ceil(((TARGET_SCORE - score) / MAX_SCORE) * 100);
-}
+  useEffect(() => {
+    const fetchDataAndPredict = async () => {
+      console.log("Starting data fetch and prediction...");
+      setLoading(true);
+      setError("");
+      
+      try {
+        // 1. Get user details from backend
+        console.log("Fetching user details from /getdetails...");
+        const detailsRes = await axios.get('/getdetails', {
+          headers: { 
+            Authorization: `Bearer ${localStorage.getItem('token')}` 
+          }
+        });
+        
+        console.log("Raw response from /getdetails:", detailsRes.data);
 
-export default function CreditScore() {
-  const score = MOCK_SCORE; // Replace with real user score
-  const progress = getProgress(score);
-  const toTargetPercent = getToTargetPercent(score);
+        if (!detailsRes.data?.financialDetails || !detailsRes.data.dues) {
+          throw new Error("Invalid data format from backend");
+        }
+
+        // 2. Process financial data
+        const totalDues = detailsRes.data.dues.reduce((sum, due) => {
+          console.log(`Processing due: ${due.title} - ${due.amount}`);
+          return sum + due.amount;
+        }, 0);
+        
+        const income = detailsRes.data.financialDetails.income;
+        const costToIncome = income > 0 
+          ? (totalDues / income).toFixed(2)
+          : 0;
+
+        console.log("Calculated values:", {
+          totalDues,
+          income,
+          costToIncome
+        });
+
+        // 3. Prepare prediction payload
+        const predictionData = {
+          platform: detailsRes.data.userInfo.platform,
+          income: income,
+          dues: totalDues,
+          cost_to_income: costToIncome,
+          platform_rating: detailsRes.data.financialDetails.rating,
+          SIZE: detailsRes.data.financialDetails.duration,
+          work_hours_per_week: detailsRes.data.financialDetails.hours
+        };
+
+        console.log("Payload for prediction:", predictionData);
+
+        // 4. Get prediction from Flask API
+        console.log("Sending prediction request to Flask...");
+        const predictionRes = await axios.post(
+          'http://localhost:5001/predict', 
+          predictionData,
+          { 
+            headers: { "Content-Type": "application/json" },
+            timeout: 10000 
+          }
+        );
+
+        console.log("Prediction response:", predictionRes.data);
+
+        if (!predictionRes.data?.prediction) {
+          throw new Error("Invalid prediction response format");
+        }
+
+        // 5. Update state
+        setUserData(detailsRes.data);
+        setScore(predictionRes.data.prediction);
+        
+      } catch (err) {
+        console.error("Error during fetch/prediction:", {
+          message: err.message,
+          response: err.response?.data,
+          stack: err.stack
+        });
+        setError(err.response?.data?.error || err.message || "Prediction failed");
+      } finally {
+        setLoading(false);
+        console.log("Process completed");
+      }
+    };
+
+    fetchDataAndPredict();
+  }, []);
+
+
+  if (loading) return <div className="loading">Loading credit score...</div>;
+  if (error) return <div className="error">Error: {error}</div>;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#181c31] via-[#22304f] to-[#3a245e] font-sans px-4">
-      <div className="bg-white/15 backdrop-blur-lg rounded-3xl shadow-[0_0_40px_#4f8cfb40] p-10 w-full max-w-xl border border-[#4f8cfb]/30">
-        <h1 className="text-4xl font-extrabold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-[#4f8cfb] to-[#a770ef] drop-shadow">
-          Your Credit Score
-        </h1>
-        <div className="flex flex-col items-center gap-6">
-          <div className="text-5xl font-bold text-white mb-2">{score} / {MAX_SCORE}</div>
-          {/* Progress Bar */}
-          <div className="w-full bg-white/10 rounded-full h-8 overflow-hidden border border-[#4f8cfb]/30 shadow-inner mb-2">
-            <div
-              className={`h-full rounded-full transition-all duration-500`}
-              style={{
-                width: `${progress}%`,
-                background: score >= TARGET_SCORE
-                  ? "linear-gradient(to right, #4f8cfb, #a770ef)"
-                  : "linear-gradient(to right, #f87171, #fbbf24)"
-              }}
-            />
-          </div>
-          <div className="w-full flex justify-between text-xs text-[#b8cfff] mb-4">
-            <span>0</span>
-            <span>{TARGET_SCORE} (Good)</span>
-            <span>{MAX_SCORE}</span>
-          </div>
-          {/* Conditional Message */}
-          {score < TARGET_SCORE ? (
-            <div className="bg-[#f87171]/20 border border-[#f87171]/30 rounded-xl p-6 mt-4 text-center">
-              <div className="text-xl font-bold text-[#f87171] mb-2">
-                Improve Your Score!
-              </div>
-              <div className="text-white mb-2">
-                You need <span className="font-bold">{TARGET_SCORE - score}</span> more points ({toTargetPercent}% of total) to reach a good credit score of <span className="font-bold">{TARGET_SCORE}</span>.
-              </div>
-              <div className="text-[#fbbf24] font-semibold mb-1">Tips to Improve:</div>
-              <ul className="text-white text-left mx-auto max-w-xs list-disc list-inside text-sm space-y-1">
-                <li>Pay all dues and bills on time.</li>
-                <li>Reduce outstanding debts and avoid late payments.</li>
-                <li>Maintain a healthy credit mix (loans, cards, etc.).</li>
-                <li>Monitor your credit report for errors.</li>
-                <li>Avoid multiple new loan applications in a short time.</li>
-              </ul>
-            </div>
-          ) : (
-            <div className="bg-[#4f8cfb]/20 border border-[#4f8cfb]/30 rounded-xl p-6 mt-4 text-center">
-              <div className="text-xl font-bold text-[#4f8cfb] mb-2">
-                Congratulations!
-              </div>
-              <div className="text-white mb-2">
-                Your credit score is above <span className="font-bold">{TARGET_SCORE}</span>. You have a <span className="text-[#a770ef] font-semibold">good credit score</span>!
-              </div>
-              <div className="text-[#a770ef] font-semibold">
-                You are eligible to apply for loans from leading banks and financial institutions.
-              </div>
-            </div>
-          )}
+    <div className="dashboard-container">
+      <h1>Credit Score Overview</h1>
+      
+      <div className="user-profile">
+        <h2>{userData.userInfo.name}</h2>
+        <p>Platform: {userData.userInfo.platform}</p>
+        <p>Email: {userData.userInfo.email}</p>
+      </div>
+
+      <div className="score-display">
+        <div className="score-number">
+          {score.toFixed(0)}
         </div>
+        <div className="score-label">Current Credit Score</div>
+      </div>
+
+      <div className="financial-summary">
+        <div className="summary-card">
+          <h3>Income</h3>
+          <p>₹{userData.financialDetails.income.toLocaleString()}</p>
+        </div>
+        
+        <div className="summary-card">
+          <h3>Total Dues</h3>
+          <p>₹{userData.dues.reduce((sum, due) => sum + due.amount, 0).toLocaleString()}</p>
+        </div>
+        
+        <div className="summary-card">
+          <h3>Work Hours/Week</h3>
+          <p>{userData.financialDetails.hours} hrs</p>
+        </div>
+      </div>
+
+      <div className="dues-breakdown">
+        <h2>Due Payments</h2>
+        <ul>
+          {userData.dues.map((due, index) => (
+            <li key={index} className={`due-item ${due.status.includes('Late') ? 'late' : ''}`}>
+              <span className="due-title">{due.title}</span>
+              <span className="due-amount">₹{due.amount.toLocaleString()}</span>
+              <span className="due-status">{due.status}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
-}
+};
+
+export default CreditScoreDashboard;

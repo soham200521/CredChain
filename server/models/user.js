@@ -20,7 +20,10 @@ const userSchema=mongoose.Schema({
         type:String,
         require:true
     },
-    
+    platfomr:{
+        type:String,
+        require:true
+    },
     address:{
         type:String,
         require:true  

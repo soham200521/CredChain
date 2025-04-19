@@ -8,6 +8,7 @@ export default function SignUp() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    platform:'',
     aadhar: '',
     pan: '',
     phone: '',
@@ -28,7 +29,7 @@ export default function SignUp() {
     const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
     const phoneRegex = /^\d{10}$/;
 
-    if (!nameRegex.test(formData.firstName)) return 'First name should contain only letters.';
+    if (!nameRegex.test(formData.firstName)) return 'First name should contain only letters.';r
     if (!nameRegex.test(formData.lastName)) return 'Last name should contain only letters.';
     if (!aadharRegex.test(formData.aadhar)) return 'Aadhar must be a 12-digit numbers ONLY.';
     if (!panRegex.test(formData.pan)) return 'Invalid PAN format (e.g., ABCDE1234F).';
@@ -108,6 +109,20 @@ export default function SignUp() {
                 required
               />
             </div>
+
+            <div>
+              <label className="block mb-1 text-sm font-medium text-gray-700">Platform You Work On:</label>
+              <input
+                name="platform"
+                value={formData.platform}
+                onChange={handleChange}
+                type="text"
+                maxLength="12"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-blue-500 bg-gray-50"
+                required
+              />
+            </div>
+
             <div>
               <label className="block mb-1 text-sm font-medium text-gray-700">Aadhar Number</label>
               <input
