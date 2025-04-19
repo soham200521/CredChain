@@ -12,16 +12,34 @@ const currencyOptions = [
   { code: "CNY", name: "Chinese Yuan", symbol: "¥" },
   { code: "AED", name: "UAE Dirham", symbol: "د.إ" },
   { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
-  // ...add more as needed
 ];
 
 export default function FinancialDetails() {
-  const { register, handleSubmit, reset } = useForm();
+  const { register, handleSubmit, reset, formState: { errors }, setError } = useForm();
   const [dues, setDues] = useState([
     { title: '', dueDate: '', amount: '', organization: '', currency: 'INR', isLate: false, daysLate: 0 }
   ]);
   const [rating, setRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [duesErrors, setDuesErrors] = useState([]);
+
+  // Validate all dues fields before submit
+  const validateDues = () => {
+    let valid = true;
+    let errorsArr = [];
+    dues.forEach((due, idx) => {
+      let dueErr = {};
+      if (!due.title) { dueErr.title = true; valid = false; }
+      if (!due.dueDate) { dueErr.dueDate = true; valid = false; }
+      if (!due.amount) { dueErr.amount = true; valid = false; }
+      if (!due.organization) { dueErr.organization = true; valid = false; }
+      if (!due.currency) { dueErr.currency = true; valid = false; }
+      if (due.isLate && (!due.daysLate || parseInt(due.daysLate) < 1)) { dueErr.daysLate = true; valid = false; }
+      errorsArr[idx] = dueErr;
+    });
+    setDuesErrors(errorsArr);
+    return valid;
+  };
 
   const handleDuesChange = (index, event) => {
     const { name, value, type, checked } = event.target;
@@ -43,15 +61,70 @@ export default function FinancialDetails() {
     setDues(newDues);
   };
 
+  const validateFileType = (file, types) => {
+    if (!file) return false;
+    const valid = types.some(type =>
+      file.type === type || (type === 'image/jpeg' && file.name.match(/\.(jpg|jpeg)$/i))
+    );
+    return valid;
+  };
+
   const onSubmit = (data) => {
+    if (!validateDues()) return;
+    if (rating === 0) {
+      alert("Please select a rating.");
+      return;
+    }
+
+    // File type validation
+    let fileErrors = false;
+
+    if (
+      !data.dueCertificates?.[0] ||
+      data.dueCertificates[0].type !== "application/pdf"
+    ) {
+      setError("dueCertificates", { type: "manual", message: "Please upload a PDF file." });
+      fileErrors = true;
+    }
+    if (
+      !data.ratingsImage?.[0] ||
+      !(data.ratingsImage[0].type === "image/jpeg" || data.ratingsImage[0].name.match(/\.(jpg|jpeg)$/i))
+    ) {
+      setError("ratingsImage", { type: "manual", message: "Please upload a JPG image." });
+      fileErrors = true;
+    }
+    if (
+      !data.joiningCertificate?.[0] ||
+      data.joiningCertificate[0].type !== "application/pdf"
+    ) {
+      setError("joiningCertificate", { type: "manual", message: "Please upload a PDF file." });
+      fileErrors = true;
+    }
+    if (
+      !data.weeklyWorkHoursPdf?.[0] ||
+      data.weeklyWorkHoursPdf[0].type !== "application/pdf"
+    ) {
+      setError("weeklyWorkHoursPdf", { type: "manual", message: "Please upload a PDF file." });
+      fileErrors = true;
+    }
+    if (
+      !data.bankStatement?.[0] ||
+      data.bankStatement[0].type !== "application/pdf"
+    ) {
+      setError("bankStatement", { type: "manual", message: "Please upload a PDF file." });
+      fileErrors = true;
+    }
+
+    if (fileErrors) return;
+
     const formData = { ...data, dues, rating };
-    // Replace this with your backend call or navigation
     console.log("Submit to backend:", formData);
     setSubmitted(true);
     setTimeout(() => setSubmitted(false), 2000);
     reset();
     setDues([{ title: '', dueDate: '', amount: '', organization: '', currency: 'INR', isLate: false, daysLate: 0 }]);
     setRating(0);
+    setDuesErrors([]);
   };
 
   return (
@@ -74,11 +147,12 @@ export default function FinancialDetails() {
               Monthly Income (INR)
             </label>
             <input
-              {...register("income", { required: true })}
+              {...register("income", { required: "Monthly income is required" })}
               type="number"
-              className="w-full rounded-lg border border-[#4f8cfb]/40 px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] focus:ring-2 focus:ring-[#a770ef] focus:border-[#a770ef] transition"
+              className={`w-full rounded-lg border px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] focus:ring-2 focus:ring-[#a770ef] focus:border-[#a770ef] transition ${errors.income ? "border-red-500" : "border-[#4f8cfb]/40"}`}
               placeholder="Enter monthly income"
             />
+            {errors.income && <p className="text-red-400 text-xs mt-1">{errors.income.message}</p>}
           </div>
           {/* Monthly Dues */}
           <div>
@@ -113,9 +187,11 @@ export default function FinancialDetails() {
                         name="title"
                         value={due.title}
                         onChange={e => handleDuesChange(index, e)}
-                        className="w-full rounded border border-[#4f8cfb]/30 px-3 py-2 text-sm bg-white/20 text-white placeholder-[#b8cfff]"
+                        required
+                        className={`w-full rounded border px-3 py-2 text-sm bg-white/20 text-white placeholder-[#b8cfff] ${duesErrors[index]?.title ? "border-red-500" : "border-[#4f8cfb]/30"}`}
                         placeholder="e.g., Rent"
                       />
+                      {duesErrors[index]?.title && <p className="text-red-400 text-xs mt-1">Required</p>}
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-white mb-1">
@@ -127,7 +203,8 @@ export default function FinancialDetails() {
                           type="date"
                           value={due.dueDate}
                           onChange={e => handleDuesChange(index, e)}
-                          className="w-full rounded border border-[#4f8cfb]/30 px-3 py-2 text-sm pr-10 bg-white/20 text-white placeholder-[#b8cfff]"
+                          required
+                          className={`w-full rounded border px-3 py-2 text-sm pr-10 bg-white/20 text-white placeholder-[#b8cfff] ${duesErrors[index]?.dueDate ? "border-red-500" : "border-[#4f8cfb]/30"}`}
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b8cfff] pointer-events-none">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -135,6 +212,7 @@ export default function FinancialDetails() {
                           </svg>
                         </span>
                       </div>
+                      {duesErrors[index]?.dueDate && <p className="text-red-400 text-xs mt-1">Required</p>}
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-white mb-1">
@@ -145,9 +223,11 @@ export default function FinancialDetails() {
                         type="number"
                         value={due.amount}
                         onChange={e => handleDuesChange(index, e)}
-                        className="w-full rounded border border-[#4f8cfb]/30 px-3 py-2 text-sm bg-white/20 text-white placeholder-[#b8cfff]"
+                        required
+                        className={`w-full rounded border px-3 py-2 text-sm bg-white/20 text-white placeholder-[#b8cfff] ${duesErrors[index]?.amount ? "border-red-500" : "border-[#4f8cfb]/30"}`}
                         placeholder="0.00"
                       />
+                      {duesErrors[index]?.amount && <p className="text-red-400 text-xs mt-1">Required</p>}
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-white mb-1">
@@ -157,7 +237,8 @@ export default function FinancialDetails() {
                         name="currency"
                         value={due.currency}
                         onChange={e => handleDuesChange(index, e)}
-                        className="w-full rounded border border-[#4f8cfb]/30 px-3 py-2 text-sm bg-white/20 text-white"
+                        required
+                        className={`w-full rounded border px-3 py-2 text-sm bg-white/20 text-white ${duesErrors[index]?.currency ? "border-red-500" : "border-[#4f8cfb]/30"}`}
                       >
                         {currencyOptions.map(opt => (
                           <option key={opt.code} value={opt.code}>
@@ -165,6 +246,7 @@ export default function FinancialDetails() {
                           </option>
                         ))}
                       </select>
+                      {duesErrors[index]?.currency && <p className="text-red-400 text-xs mt-1">Required</p>}
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-xs font-medium text-white mb-1">
@@ -174,9 +256,11 @@ export default function FinancialDetails() {
                         name="organization"
                         value={due.organization}
                         onChange={e => handleDuesChange(index, e)}
-                        className="w-full rounded border border-[#4f8cfb]/30 px-3 py-2 text-sm bg-white/20 text-white placeholder-[#b8cfff]"
+                        required
+                        className={`w-full rounded border px-3 py-2 text-sm bg-white/20 text-white placeholder-[#b8cfff] ${duesErrors[index]?.organization ? "border-red-500" : "border-[#4f8cfb]/30"}`}
                         placeholder="e.g., Bank, Landlord"
                       />
+                      {duesErrors[index]?.organization && <p className="text-red-400 text-xs mt-1">Required</p>}
                     </div>
                     <div className="md:col-span-2 flex items-center gap-4 pt-2">
                       <input
@@ -191,15 +275,19 @@ export default function FinancialDetails() {
                         This payment is late
                       </label>
                       {due.isLate && (
-                        <input
-                          type="number"
-                          name="daysLate"
-                          value={due.daysLate}
-                          onChange={e => handleDuesChange(index, e)}
-                          className="ml-4 w-32 rounded border border-[#4f8cfb]/30 px-3 py-2 text-sm bg-white/20 text-white placeholder-[#b8cfff]"
-                          placeholder="Days late"
-                          min="1"
-                        />
+                        <>
+                          <input
+                            type="number"
+                            name="daysLate"
+                            value={due.daysLate}
+                            onChange={e => handleDuesChange(index, e)}
+                            required
+                            className={`ml-4 w-32 rounded border px-3 py-2 text-sm bg-white/20 text-white placeholder-[#b8cfff] ${duesErrors[index]?.daysLate ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+                            placeholder="Days late"
+                            min="1"
+                          />
+                          {duesErrors[index]?.daysLate && <p className="text-red-400 text-xs mt-1">Required</p>}
+                        </>
                       )}
                     </div>
                   </div>
@@ -217,7 +305,7 @@ export default function FinancialDetails() {
           {/* Ratings */}
           <div>
             <label className="block text-sm font-medium text-white mb-2">
-              Ratings (on app you work on)
+              Ratings (on app you work on) <span className="text-red-400">*</span>
             </label>
             <div className="flex items-center">
               <div className="flex">
@@ -240,8 +328,8 @@ export default function FinancialDetails() {
               </div>
               <span className="ml-2 text-lg font-semibold text-white">{rating} / 5</span>
             </div>
+            {rating === 0 && <p className="text-red-400 text-xs mt-1">Rating is required</p>}
           </div>
-
           {/* Duration and Work Hours */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -249,25 +337,80 @@ export default function FinancialDetails() {
                 Duration with Current Company (years)
               </label>
               <input
-                {...register("duration")}
+                {...register("duration", { required: "Duration is required" })}
                 type="number"
-                className="w-full rounded-lg border border-[#4f8cfb]/40 px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] focus:ring-2 focus:ring-[#a770ef] focus:border-[#a770ef]"
+                className={`w-full rounded-lg border px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] focus:ring-2 focus:ring-[#a770ef] focus:border-[#a770ef] ${errors.duration ? "border-red-500" : "border-[#4f8cfb]/40"}`}
                 placeholder="Enter employment duration"
               />
+              {errors.duration && <p className="text-red-400 text-xs mt-1">{errors.duration.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-white mb-2">
                 Weekly Work Hours
               </label>
               <input
-                {...register("hours")}
+                {...register("hours", { required: "Weekly work hours are required" })}
                 type="number"
-                className="w-full rounded-lg border border-[#4f8cfb]/40 px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] focus:ring-2 focus:ring-[#a770ef] focus:border-[#a770ef]"
+                className={`w-full rounded-lg border px-4 py-3 bg-white/20 text-white placeholder-[#b8cfff] focus:ring-2 focus:ring-[#a770ef] focus:border-[#a770ef] ${errors.hours ? "border-red-500" : "border-[#4f8cfb]/40"}`}
                 placeholder="Enter weekly hours"
               />
+              {errors.hours && <p className="text-red-400 text-xs mt-1">{errors.hours.message}</p>}
             </div>
           </div>
-
+          {/* Document Uploads */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-bold text-white">Upload Documents</h3>
+            <div>
+              <label className="block text-sm font-medium text-white mb-1">Due Certificates (PDF)</label>
+              <input
+                type="file"
+                accept="application/pdf"
+                {...register('dueCertificates', { required: "Due certificates PDF is required" })}
+                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${errors.dueCertificates ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+              />
+              {errors.dueCertificates && <p className="text-red-400 text-xs mt-1">{errors.dueCertificates.message}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-1">Image of Ratings (Screenshot in JPG)</label>
+              <input
+                type="file"
+                accept=".jpg, .jpeg,image/jpeg"
+                {...register('ratingsImage', { required: "Ratings screenshot (JPG) is required" })}
+                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${errors.ratingsImage ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+              />
+              {errors.ratingsImage && <p className="text-red-400 text-xs mt-1">{errors.ratingsImage.message}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-1">Joining Certificate (PDF)</label>
+              <input
+                type="file"
+                accept="application/pdf"
+                {...register('joiningCertificate', { required: "Joining certificate PDF is required" })}
+                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${errors.joiningCertificate ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+              />
+              {errors.joiningCertificate && <p className="text-red-400 text-xs mt-1">{errors.joiningCertificate.message}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-1">Weekly Work Hours (Past Work Done PDF)</label>
+              <input
+                type="file"
+                accept="application/pdf"
+                {...register('weeklyWorkHoursPdf', { required: "Work hours PDF is required" })}
+                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${errors.weeklyWorkHoursPdf ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+              />
+              {errors.weeklyWorkHoursPdf && <p className="text-red-400 text-xs mt-1">{errors.weeklyWorkHoursPdf.message}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-1">Bank Statement (Past 3 months PDF)</label>
+              <input
+                type="file"
+                accept="application/pdf"
+                {...register('bankStatement', { required: "Bank statement PDF is required" })}
+                className={`w-full rounded border px-3 py-2 bg-white/20 text-white placeholder-[#b8cfff] ${errors.bankStatement ? "border-red-500" : "border-[#4f8cfb]/30"}`}
+              />
+              {errors.bankStatement && <p className="text-red-400 text-xs mt-1">{errors.bankStatement.message}</p>}
+            </div>
+          </div>
           {/* Submit */}
           <button
             type="submit"
