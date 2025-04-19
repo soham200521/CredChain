@@ -5,16 +5,21 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 import joblib
 from flask_cors import CORS
-app = Flask(__name__)
+import sys
 
+# Add blockchain module import
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from API.blockchain import store_on_blockchain
+
+app = Flask(__name__)
 CORS(app)
 
 # Configuration
-BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).parent.parent
 MODEL_DIR = BASE_DIR / "model"
 MODEL_PATH = MODEL_DIR / "credit_model.pkl"
 COLUMNS_PATH = MODEL_DIR / "columns.pkl"
-CSV_PATH = BASE_DIR / "data/training_data.csv"
+CSV_PATH = MODEL_DIR / "training_data.csv"
 
 # Ensure model directory exists
 MODEL_DIR.mkdir(exist_ok=True)
@@ -48,11 +53,32 @@ def predict():
         columns = joblib.load(COLUMNS_PATH)
         
         data = request.json
-        df = pd.DataFrame([data])
+        user_wallet = data.get('wallet_address')
+        
+        if not user_wallet:
+            return jsonify({"error": "Wallet address required"}), 400
+        
+        # Create dataframe for prediction
+        prediction_data = {k: v for k, v in data.items() if k != 'wallet_address'}
+        df = pd.DataFrame([prediction_data])
         df = pd.get_dummies(df).reindex(columns=columns, fill_value=0)
         
-        prediction = model.predict(df)
-        return jsonify({"prediction": prediction[0]})
+        prediction = model.predict(df)[0]
+        
+        # Store on blockchain
+        tx_hash = store_on_blockchain(user_wallet, prediction)
+        
+        if not tx_hash:
+            return jsonify({
+                "prediction": prediction,
+                "warning": "Failed to store on blockchain"
+            })
+        
+        return jsonify({
+            "prediction": prediction,
+            "blockchain_tx": tx_hash,
+            "blockchain_explorer": f"https://sepolia.etherscan.io/tx/{tx_hash}"
+        })
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
