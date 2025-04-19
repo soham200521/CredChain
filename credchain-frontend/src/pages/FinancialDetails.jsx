@@ -12,7 +12,7 @@ const currencyOptions = [
   { code: "CNY", name: "Chinese Yuan", symbol: "¥" },
   { code: "AED", name: "UAE Dirham", symbol: "د.إ" },
   { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
-  // ...add more as needed
+  // ...add more if needed
 ];
 
 export default function FinancialDetails() {
