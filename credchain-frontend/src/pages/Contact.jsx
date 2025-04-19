@@ -91,8 +91,8 @@ export default function Contact() {
               </form>
             )}
           </div>
-          {/* Contact Info */}
-          <div className="flex-1 bg-white/15 backdrop-blur-md rounded-2xl border border-[#4f8cfb]/20 p-8 shadow-[0_0_30px_#4f8cfb30] flex flex-col justify-center">
+          {/* Contact Info with Glow Effect */}
+          <div className="flex-1 bg-white/15 backdrop-blur-md rounded-2xl border border-[#4f8cfb]/20 p-8 shadow-[0_0_30px_#4f8cfb30] hover:shadow-lg hover:shadow-blue-500 transition-shadow duration-300 flex flex-col justify-center">
             <h2 className="text-2xl font-bold text-[#4f8cfb] mb-4 text-center">Contact Information</h2>
             <div className="text-white text-base space-y-3 mb-6">
               <div>
