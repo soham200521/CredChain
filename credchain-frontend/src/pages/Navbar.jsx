@@ -31,6 +31,20 @@ export default function Navbar() {
         }
     }, [isAuthenticated, isLoading, user, navigate, location.pathname]);
 
+    const logout_func = async () => {
+        try{
+          const response=await axios.get('/logout');
+          if(response.status===200){
+    
+            logout({ logoutParams: { returnTo: window.location.origin } });
+          }
+        }
+        catch(err){
+          console.log(err);
+        }
+    
+      };
+
     return (
         <nav className="w-full pl-12 pr-16 py-4 bg-gradient-to-r from-[#181f3a] to-[#2a4365] flex items-center justify-between shadow">
             {/* Logo and Brand */}
@@ -168,7 +182,7 @@ export default function Navbar() {
                     </button>
                 ) : (
                     <button
-                        onClick={() => logout({ returnTo: window.location.origin })}
+                        onClick={logout_func}
                         className="ml-4 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold shadow hover:scale-105 transition"
                     >
                         Log Out
