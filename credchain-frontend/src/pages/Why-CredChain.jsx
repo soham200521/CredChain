@@ -18,7 +18,8 @@ export default function WhyCredChain() {
             <img
               src="/images/6566.jpg"
               alt="Inclusive finance illustration"
-              className="w-64 md:w-80"
+              className="w-full max-w-2xl h-auto rounded-2xl shadow-lg object-cover transition-all duration-300"
+              style={{ minHeight: "280px", maxHeight: "420px" }}
             />
           </div>
         </section>

@@ -5,8 +5,8 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 import joblib
 from flask_cors import CORS
-app = Flask(__name__)
 
+app = Flask(__name__)
 CORS(app)
 
 # Configuration
@@ -25,10 +25,10 @@ def train_model():
         X = df.drop("credit_score", axis=1)
         X = pd.get_dummies(X)
         y = df["credit_score"]
-        
+
         model = RandomForestRegressor()
         model.fit(X, y)
-        
+
         joblib.dump(model, MODEL_PATH)
         joblib.dump(X.columns.tolist(), COLUMNS_PATH)
         
@@ -43,17 +43,17 @@ def predict():
     try:
         if not (MODEL_PATH.exists() and COLUMNS_PATH.exists()):
             return jsonify({"error": "Model not trained"}), 400
-            
+
         model = joblib.load(MODEL_PATH)
         columns = joblib.load(COLUMNS_PATH)
-        
+
         data = request.json
         df = pd.DataFrame([data])
         df = pd.get_dummies(df).reindex(columns=columns, fill_value=0)
-        
+
         prediction = model.predict(df)
         return jsonify({"prediction": prediction[0]})
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

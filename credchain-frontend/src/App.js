@@ -10,7 +10,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import WhyCredChain from './pages/Why-CredChain';
 import HowItWorks from './pages/HowItWorks';
-
+//hi
 // Import your new admin pages
 import Admin from "./pages/Admin";
 import VerifyDocs from "./pages/VerifyDocs";

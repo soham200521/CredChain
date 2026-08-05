@@ -1,7 +1,7 @@
 import { useAuth0 } from "@auth0/auth0-react";
 
 export default function Overview() {
-  const { loginWithRedirect,user } = useAuth0();
+  const { loginWithRedirect, user } = useAuth0();
 
   return (
     <div className="min-h-screen bg-black text-white px-8 flex flex-col font-sans">
@@ -9,10 +9,11 @@ export default function Overview() {
         {/* Hero Section */}
         <div className="text-center space-y-6">
           <h1 className="text-6xl md:text-7xl font-extrabold leading-tight bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 text-transparent bg-clip-text animate-fade-in-up">
-            Welcome to <span className="underline decoration-pink-500/50">CredChain!</span>
+            Fair Credit for <span className="block md:inline">India's </span>
+            <span className="underline decoration-pink-500/50">Gig Workforce</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto animate-fade-in">
-            We’re transforming the credit scoring experience with blockchain — private, secure, and built for the future.
+            Millions of gig workers, low-income, and irregular earners are invisible to banks and forced to borrow from loan sharks at high interest. CredChain builds a fair credit score for them—using real-life data, not just bank history.
           </p>
           {/* SINGLE CTA BUTTON */}
           <div className="flex justify-center mt-6 animate-fade-in-up">
@@ -30,20 +31,30 @@ export default function Overview() {
           {/* What is CredChain? */}
           <div>
             <h2 className="text-3xl font-semibold mb-4 text-white tracking-tight">
-              🏦 What is CredChain?
+              🛵 Why Are So Many Credit Invisible?
             </h2>
             <p className="text-gray-300 text-lg leading-relaxed">
-              CredChain is a blockchain-powered platform that helps people without traditional credit histories get fair credit scores by using alternative data like utility payments and gig work income. It empowers users to access financial opportunities with transparency and security.
+              CIBIL and traditional banks only recognize people who already have loans or credit cards. But gig workers, daily wage earners, and informal sector participants often have no collateral, no guarantor, and no way to start. They’re denied loans and are forced to local loan sharks, facing sky-high interest and harassment.
             </p>
           </div>
 
           {/* Why Financial Inclusion Matters */}
           <div>
             <h2 className="text-3xl font-semibold mb-4 text-white tracking-tight">
-              🌍 Why Financial Inclusion Matters
+              🔄 How CredChain Bridges the Gap
             </h2>
             <p className="text-gray-300 text-lg leading-relaxed">
-              In India especially, many people lack formal credit histories and struggle to increase their scores because low-income individuals have tax exemptions, while paying tax helps increase credit scores. We aim to bridge this gap and provide a more inclusive financial ecosystem, so everyone can access fair credit and financial opportunities.
+              We build a new, fair credit score using 5-6 key data points: monthly income, gig ratings, utility bill payments, rent history, and employment verification. <b>A few banks use this score to offer collateral-free loans.</b> As users repay, their CIBIL score builds up—unlocking access to mainstream finance.
+            </p>
+          </div>
+
+          {/* Why Banks Will Go For This */}
+          <div>
+            <h2 className="text-3xl font-semibold mb-4 text-white tracking-tight">
+              🏦 Why Banks & Lenders Want This
+            </h2>
+            <p className="text-gray-300 text-lg leading-relaxed">
+              Banks make money by lending. Our platform gives them a new, data-driven way to safely lend to millions of previously “unbankable” Indians—growing their customer base and revenue, while we earn a fee per successful loan.
             </p>
           </div>
         </div>

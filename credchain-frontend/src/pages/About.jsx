@@ -43,10 +43,25 @@ export default function About() {
 
         <div className="bg-white/15 backdrop-blur-lg rounded-3xl shadow-[0_0_40px_#4f8cfb40] px-8 py-6 max-w-3xl mx-auto mb-16 border border-[#4f8cfb]/30 hover:shadow-[0_0_60px_#a770ef70] transition-all duration-500">
           <p className="text-lg md:text-xl text-white text-center font-medium leading-relaxed">
-            CredChain is a blockchain-powered platform that reimagines credit scoring for the modern age.
-            By leveraging alternative data like utility payments and gig economy income, we empower individuals
-            without traditional credit histories to access fair financial opportunities. Our team is passionate
-            about transparency, user empowerment, and building the future of decentralized finance.
+            <span className="text-[#a770ef] font-bold">Our Mission:</span> 
+            <br />
+            CredChain exists to end financial exclusion for India's gig workers, low-income, and irregular earners. 
+            We build fair credit scores using 5-6 key data points—like gig app earnings, utility bills, rent history, employment verification, and mobile recharge history—so banks can safely lend to people ignored by CIBIL.
+            <br /><br />
+            <span className="text-[#4f8cfb] font-bold">For Banks & Lenders:</span>
+            <br />
+            Our AI analyzes these key financial behaviors to predict repayment capability, turning high-risk "unbankables" into profitable customers. We help banks reduce risk while fulfilling their financial inclusion mandate.
+            <br /><br />
+            <span className="text-[#a770ef] font-bold">For Users:</span>
+            <br />
+            We help you escape loan sharks using your real financial behavior:
+            <ul className="mt-2 list-disc list-inside text-[#b8cfff] text-base">
+              <li>Utility bill payments</li>
+              <li>Gig app earnings</li> 
+              <li>Rent history</li>
+              <li>Employment verification</li>
+              <li>Mobile recharge history</li>
+            </ul>
           </p>
         </div>
 

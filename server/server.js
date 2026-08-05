@@ -263,6 +263,8 @@ app.get("/getdetails", isloggedin, async (req, res) => {
       .sort({ dateToday: -1 })
       .lean();
 
+
+
     if (!latestDetails) {
       return res.status(404).json({ error: "No financial details found" });
     }
