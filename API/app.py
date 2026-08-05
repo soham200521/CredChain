@@ -1,85 +1,66 @@
+import os
+from pathlib import Path
 from flask import Flask, request, jsonify
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 import joblib
-import os
-
+from flask_cors import CORS
 app = Flask(__name__)
 
-# Paths
-MODEL_DIR = "model"
-MODEL_PATH = os.path.join(MODEL_DIR, "credit_model.pkl")
-COLUMNS_PATH = os.path.join(MODEL_DIR, "columns.pkl")
-CSV_PATH = "data/training_data.csv"
+CORS(app)
+
+# Configuration
+BASE_DIR = Path(__file__).parent
+MODEL_DIR = BASE_DIR / "model"
+MODEL_PATH = MODEL_DIR / "credit_model.pkl"
+COLUMNS_PATH = MODEL_DIR / "columns.pkl"
+CSV_PATH = BASE_DIR / "data/training_data.csv"
 
 # Ensure model directory exists
-os.makedirs(MODEL_DIR, exist_ok=True)
-
-# ------------------ TRAIN MODEL ------------------
+MODEL_DIR.mkdir(exist_ok=True)
 
 def train_model():
-    print("🔥 Training started...")
-
     try:
         df = pd.read_csv(CSV_PATH)
-        print("✅ CSV loaded. First 3 rows:")
-        print(df.head(3))
-    except Exception as e:
-        print("❌ Error loading CSV:", e)
-        return
-
-    try:
         X = df.drop("credit_score", axis=1)
-        y = df["credit_score"]
         X = pd.get_dummies(X)
-
+        y = df["credit_score"]
+        
         model = RandomForestRegressor()
         model.fit(X, y)
-
-        # Save model and columns
+        
         joblib.dump(model, MODEL_PATH)
         joblib.dump(X.columns.tolist(), COLUMNS_PATH)
-
+        
         print(f"✅ Model saved to {MODEL_PATH}")
-        print(f"✅ Columns saved to {COLUMNS_PATH}")
+        return True
     except Exception as e:
-        print("❌ Error during training:", e)
-
-# ------------------ PREDICT ------------------
+        print(f"❌ Training error: {str(e)}")
+        return False
 
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        if not os.path.exists(MODEL_PATH) or not os.path.exists(COLUMNS_PATH):
-            return jsonify({"error": "Model not trained yet."}), 500
-
+        if not (MODEL_PATH.exists() and COLUMNS_PATH.exists()):
+            return jsonify({"error": "Model not trained"}), 400
+            
         model = joblib.load(MODEL_PATH)
         columns = joblib.load(COLUMNS_PATH)
-
-        user_data = request.get_json()
-        df = pd.DataFrame([user_data])
-        df = pd.get_dummies(df)
-
-        # Align input with training columns
-        df = df.reindex(columns=columns, fill_value=0)
-
-        score = model.predict(df)[0]
-        return jsonify({"predicted_credit_score": round(score, 2)})
-
+        
+        data = request.json
+        df = pd.DataFrame([data])
+        df = pd.get_dummies(df).reindex(columns=columns, fill_value=0)
+        
+        prediction = model.predict(df)
+        return jsonify({"prediction": prediction[0]})
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ------------------ TRAIN ENDPOINT ------------------
-
-@app.route("/train", methods=["GET"])
-def train():
-    try:
-        train_model()
-        return jsonify({"message": "Model trained successfully!"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# ------------------ MAIN ------------------
+@app.route("/train", methods=["POST"])
+def train_endpoint():
+    success = train_model()
+    return jsonify({"success": success}), 200 if success else 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5001)

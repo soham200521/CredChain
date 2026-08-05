@@ -5,6 +5,7 @@ import axios from 'axios';
 
 export default function Navbar() {
     const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
+    const [isRegistered, setIsRegistered] = React.useState(false);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -15,12 +16,16 @@ export default function Navbar() {
                     params: { email: user.email }
                 });
 
-                if (response.status === 200 && location.pathname === '/') {
-                    navigate('/');
+                if (response.status === 200) {
+                    setIsRegistered(true);
+                    if (location.pathname === '/signup') {
+                        navigate('/');
+                    }
                 }
             } catch (error) {
                 console.error('Error during registration check:', error);
-                if (location.pathname === '/') {
+                setIsRegistered(false);
+                if (['/', '/credit-score', '/financial-details'].includes(location.pathname)) {
                     navigate('/signup');
                 }
             }
@@ -28,6 +33,8 @@ export default function Navbar() {
 
         if (isAuthenticated && user && user.email && !isLoading) {
             login_func();
+        } else if (!isAuthenticated && !isLoading) {
+            setIsRegistered(false);
         }
     }, [isAuthenticated, isLoading, user, navigate, location.pathname]);
 
@@ -171,13 +178,16 @@ export default function Navbar() {
                 <Link to="/contact" className="text-white text-lg font-medium hover:text-pink-400 transition">
                     Contact Us
                 </Link>
-                {user&&<Link to="/credit-score" className="text-white text-lg font-medium hover:text-pink-400 transition">
-                    View Score
-                </Link>}
-
-                {user&&<Link to="/financial-details" className="text-white text-lg font-medium hover:text-pink-400 transition">
-                    Update Details
-                </Link>}
+                {isAuthenticated && isRegistered && (
+                    <>
+                        <Link to="/credit-score" className="text-white text-lg font-medium hover:text-pink-400 transition">
+                            View Score
+                        </Link>
+                        <Link to="/financial-details" className="text-white text-lg font-medium hover:text-pink-400 transition">
+                            Update Details
+                        </Link>
+                    </>
+                )}
 
 
 

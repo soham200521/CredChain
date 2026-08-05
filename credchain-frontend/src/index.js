@@ -19,6 +19,8 @@ root.render(
     authorizationParams={{
       redirect_uri: window.location.origin
     }}
+    cacheLocation="localstorage"
+    useRefreshTokens={true}
   >
   <Web3ReactProvider getLibrary={getLibrary}>
     <App />

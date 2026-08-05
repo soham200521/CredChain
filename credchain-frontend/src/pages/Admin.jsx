@@ -1,63 +1,95 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 export default function Admin() {
-  const { register, handleSubmit } = useForm();
+  const [adminId, setAdminId] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const onSubmit = async (data) => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
-      // Fix: Use full backend URL
-      const response = await axios.post(
-        'http://localhost:5000/verifypassword',
-        { password: data.password }
-      );
+      const response = await axios.post('/verifypassword', {
+        adminId: adminId.trim(),
+        password: password.trim()
+      });
+
       if (response.data.success) {
+        sessionStorage.setItem('adminAuthenticated', 'true');
         navigate('/verify-docs');
       } else {
-        setError('Invalid password');
+        setError(response.data.message || 'Invalid credentials');
       }
     } catch (err) {
-      setError('Invalid password');
+      setError(err.response?.data?.message || 'Invalid Admin ID or Password');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white px-8 flex flex-col font-sans">
-      <main className="flex-1 w-full max-w-md mx-auto flex flex-col justify-center py-16 mt-3">
-        <div className="bg-gradient-to-br from-[#1f1f1f] via-[#2a2a2a] to-[#1f1f1f] rounded-3xl p-8 md:p-10 shadow-[0_0_40px_#ff80bf55] border border-white/10 backdrop-blur-xl animate-fade-in-up">
-          <h2 className="text-3xl font-extrabold mb-6 text-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 text-transparent bg-clip-text">
-            Admin Login
+    <div className="min-h-screen bg-gradient-to-br from-[#181c31] via-[#22304f] to-[#3a245e] text-white px-4 flex flex-col justify-center items-center font-sans">
+      <div className="w-full max-w-md bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-[0_0_50px_#4f8cfb40] border border-[#4f8cfb]/30 space-y-6">
+        
+        <div className="text-center space-y-2">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-r from-[#4f8cfb] to-[#a770ef] flex items-center justify-center text-3xl shadow-lg border border-white/20">
+            🔐
+          </div>
+          <h2 className="text-3xl font-extrabold text-white tracking-wider">
+            Admin <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#4f8cfb] to-[#a770ef]">Portal</span>
           </h2>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-white mb-1">Password</label>
-              <input
-                type="password"
-                {...register('password', { required: true })}
-                className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                placeholder="Enter admin password"
-              />
-            </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-8 py-3 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-xl text-white font-semibold text-lg shadow-lg hover:scale-105 hover:shadow-pink-400/50 transition"
-            >
-              {loading ? 'Verifying...' : 'Login'}
-            </button>
-          </form>
+          <p className="text-[#b8cfff] text-sm">Log in to review & verify applicant documents</p>
         </div>
-      </main>
+
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-[#b8cfff] mb-2">Admin ID</label>
+            <input
+              type="text"
+              value={adminId}
+              onChange={(e) => setAdminId(e.target.value)}
+              required
+              className="w-full px-4 py-3 rounded-xl border border-white/20 bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#4f8cfb] focus:border-transparent transition"
+              placeholder="Enter Admin ID"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-[#b8cfff] mb-2">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-4 py-3 rounded-xl border border-white/20 bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#4f8cfb] focus:border-transparent transition"
+              placeholder="Enter Password"
+            />
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-300 text-sm font-medium text-center">
+              ⚠️ {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3.5 bg-gradient-to-r from-[#4f8cfb] to-[#a770ef] rounded-xl text-white font-bold text-lg shadow-lg hover:scale-[1.02] hover:shadow-[0_0_30px_#a770ef66] active:scale-95 transition-all duration-300 disabled:opacity-50"
+          >
+            {loading ? 'Authenticating...' : 'Sign In as Admin'}
+          </button>
+        </form>
+
+        
+      </div>
     </div>
   );
 }
+
