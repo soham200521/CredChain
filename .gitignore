@@ -1,3 +1,10 @@
 node_modules
 venv
+
+# Secrets: never commit
 .env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example

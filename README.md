@@ -39,3 +39,7 @@ Team Name: Syntax Error
 
 ### Made at:
 <a href="https://hack36.com"> <img src="https://i.postimg.cc/FFwvfkGk/built-at-hack36.png" height=24px> </a>
+
+## Running locally
+
+See [SETUP.md](SETUP.md) for setup steps. Secrets are not in this repo; each `.env` file has a `.env.example` template.

@@ -1,0 +1,8 @@
+flask
+flask-cors
+pandas
+scikit-learn
+joblib
+python-dotenv
+# blockchain.py uses geth_poa_middleware, which was removed in web3 v7
+web3>=6,<7
